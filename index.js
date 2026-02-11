@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const cors = require('cors');
 const { Client } = require('pg');
@@ -10,7 +11,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Multer → guardar en disco en uploads/
+// --- Crear carpeta uploads si no existe ---
+if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
+
+// Multer → guardar archivos temporalmente en uploads/
 const upload = multer({ dest: 'uploads/' });
 
 // Configuración S3
@@ -20,7 +24,7 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION
 });
 
-// Endpoint login
+// --- Endpoint login ---
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
@@ -41,7 +45,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Endpoint subir foto a S3
+// --- Endpoint subir foto a S3 ---
 app.post('/upload-photo', upload.single('photo'), async (req, res) => {
   try {
     const bucketName = req.body.bucket;
@@ -66,13 +70,15 @@ app.post('/upload-photo', upload.single('photo'), async (req, res) => {
   } catch (err) {
     console.error("Error al subir foto:", err);
     res.status(500).json({ success: false, message: 'Error al subir foto' });
-  }finally {
+  } finally {
+    // Borrar archivo temporal
     if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);  // borrar archivo temporal
+      fs.unlinkSync(req.file.path);
       console.log("Archivo temporal eliminado:", req.file.path);
     }
-}
+  }
 });
 
+// --- Escuchar puerto dinámico de Render ---
 const PORT = process.env.PORT || 3000;
-console.log(`API funcionando en puerto ${PORT}`);
+app.listen(PORT, () => console.log(`API funcionando en el puerto ${PORT}`));
