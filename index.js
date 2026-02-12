@@ -23,6 +23,7 @@ app.post('/login', async (req, res) => {
     await client.end();     // desconecta
     res.json({ success: true, message: 'Login correcto' });
   } catch (err) {
+    console.error("DETALLE DEL ERROR:", err.message);
     res.status(401).json({ success: false, message: 'Usuario o contraseña incorrecta' });
   }
 });
